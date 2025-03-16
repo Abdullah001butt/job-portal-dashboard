@@ -2,6 +2,9 @@
 
 A sophisticated job search platform built with React, featuring real-time job listings, advanced search capabilities, and a sleek user interface.
 
+![image](https://github.com/user-attachments/assets/8b1f0778-7522-4a45-9ba5-7821f1111645)
+
+
 ## ✨ Features
 
 - **Advanced Job Search** - Smart search with debounce functionality
