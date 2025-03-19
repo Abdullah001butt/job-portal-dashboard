@@ -33,10 +33,10 @@ function Favorites() {
       <div className="flex items-center justify-between w-full mb-6">
         <div className="space-y-1">
           <h1 className="text-2xl sm:text-3xl font-bold">
-            Saved Jobs ({favoriteJobs.length})
+            Favorite Jobs ({favoriteJobs.length})
           </h1>
           <p className="text-muted-foreground">
-            Jobs you've saved for later
+            Jobs that your favorite
           </p>
         </div>
         <Button 

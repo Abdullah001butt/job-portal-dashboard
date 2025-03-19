@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route } from "react-router-dom";
 import { Provider } from "react-redux";
@@ -12,6 +12,7 @@ import Login from "./pages/Login";
 import Header from "./components/Header";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ScrollToTop from "./components/ScrollToTop";
+import SavedJobs from "./pages/SavedJobs";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,46 +38,63 @@ const LoadingSpinner = () => (
   </div>
 );
 
+const AppContent = () => {
+  const location = useLocation();
+  const isLoginPage = location.pathname === "/login";
+
+  return (
+    <div className="min-h-screen w-full bg-gray-50">
+      {!isLoginPage && <Header />}
+      <main className="container mx-auto px-4 py-8">
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Jobs />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/job/:id"
+              element={
+                <ProtectedRoute>
+                  <JobDetails />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/favorites"
+              element={
+                <ProtectedRoute>
+                  <Favorites />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/saved-jobs"
+              element={
+                <ProtectedRoute>
+                  <SavedJobs />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </Suspense>
+      </main>
+      <ScrollToTop />
+    </div>
+  );
+};
+
 const App = () => (
   <Provider store={store}>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Toaster />
-        <div className="min-h-screen w-full bg-gray-50">
-          <Header />
-          <main className="container mx-auto px-4 py-8">
-            <Suspense fallback={<LoadingSpinner />}>
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route
-                  path="/"
-                  element={
-                    <ProtectedRoute>
-                      <Jobs />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/job/:id"
-                  element={
-                    <ProtectedRoute>
-                      <JobDetails />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/favorites"
-                  element={
-                    <ProtectedRoute>
-                      <Favorites />
-                    </ProtectedRoute>
-                  }
-                />
-              </Routes>
-            </Suspense>
-          </main>
-          <ScrollToTop />
-        </div>
+        <AppContent />
       </BrowserRouter>
     </QueryClientProvider>
   </Provider>

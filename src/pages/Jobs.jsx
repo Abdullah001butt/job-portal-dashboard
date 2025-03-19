@@ -1,20 +1,26 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import JobList from '../components/JobList';
 import FilterSection from '../components/FilterSection';
-import { Skeleton } from "../components/ui/skeleton";
-import { Button } from "../components/ui/button";
+import { useInView } from 'react-intersection-observer';
 
 const JOBS_PER_PAGE = 9;
 
 function Jobs() {
-  const [displayCount, setDisplayCount] = useState(JOBS_PER_PAGE);
+  const { ref, inView } = useInView({
+    onChange: (inView) => {
+      if (inView && hasMore) {
+        setDisplayCount(prev => prev + JOBS_PER_PAGE);
+      }
+    }
+  });
+  const [displayCount, setDisplayCount] = React.useState(JOBS_PER_PAGE);
   const searchTerm = useSelector(state => state.jobs.searchTerm);
   const filters = useSelector(state => state.jobs.filters);
 
-  const { data, isLoading } = useQuery({
+  const { data: jobs, isLoading } = useQuery({
     queryKey: ['jobs', searchTerm, filters],
     queryFn: async () => {
       const response = await axios.get('https://remotive.com/api/remote-jobs');
@@ -22,11 +28,14 @@ function Jobs() {
     }
   });
 
-  const filteredJobs = useMemo(() => 
-    data?.filter(job => {
-      const matchesSearch = 
-        job.title.toLowerCase().includes(searchTerm?.toLowerCase() || '') ||
-        job.company_name.toLowerCase().includes(searchTerm?.toLowerCase() || '');
+  const filteredJobs = useMemo(() => {
+    if (!jobs) return [];
+    
+    return jobs.filter(job => {
+      const searchValue = searchTerm?.toLowerCase() || '';
+      const matchesSearch = !searchValue || 
+        job.title.toLowerCase().includes(searchValue) ||
+        job.company_name.toLowerCase().includes(searchValue);
       
       const matchesJobType = !filters.jobType || filters.jobType === 'all' || 
         job.job_type.toLowerCase().replace('-', '_') === filters.jobType;
@@ -35,36 +44,15 @@ function Jobs() {
         job.candidate_required_location.toLowerCase().includes(filters.location.toLowerCase());
     
       return matchesSearch && matchesJobType && matchesLocation;
-    }),
-    [data, searchTerm, filters]
-  );
+    });
+  }, [jobs, searchTerm, filters]);
 
-  const paginatedJobs = useMemo(() => 
+  const displayedJobs = useMemo(() => 
     filteredJobs?.slice(0, displayCount),
     [filteredJobs, displayCount]
   );
 
   const hasMore = filteredJobs?.length > displayCount;
-
-  function handleLoadMore() {
-    setDisplayCount(prev => prev + JOBS_PER_PAGE);
-  }
-
-  if (isLoading) {
-    return (
-      <div className="min-h-[80vh] flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-            <div className="w-12 h-12 border-4 border-primary/50 border-t-transparent rounded-full animate-spin absolute top-2 left-2"></div>
-          </div>
-          <p className="text-lg font-medium text-muted-foreground animate-pulse">
-            Loading amazing jobs for you...
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-[80vh] w-full flex flex-col">
@@ -76,22 +64,15 @@ function Jobs() {
 
       <FilterSection />
 
-      <div className="flex-grow">
-        <JobList jobs={paginatedJobs} />
+      <div className="flex-grow"> 
+        <JobList jobs={displayedJobs} />
       </div>
       
-      {hasMore && (
-        <div className="flex justify-center mt-8 w-full">
-          <Button 
-            onClick={handleLoadMore} 
-            variant="outline" 
-            size="lg"
-            className="min-w-[200px] text-white hover:text-blue-500"
-          >
-            Load More Jobs
-          </Button>
-        </div>
-      )}
+      <div ref={ref} className="flex justify-center mt-8 w-full">
+        {hasMore && (
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        )}
+      </div>
     </div>
   );
 }

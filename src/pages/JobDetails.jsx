@@ -1,6 +1,8 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useDispatch, useSelector } from "react-redux";
+import { toggleSavedJob } from "@/redux/slices/savedJobsSlice";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import { Button } from "../components/ui/button";
@@ -20,6 +22,7 @@ import {
 function JobDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const { data: jobs, isLoading } = useQuery({
     queryKey: ["jobs"],
@@ -30,6 +33,8 @@ function JobDetails() {
   });
 
   const job = jobs?.find((job) => job.id === parseInt(id));
+  const savedJobs = useSelector(state => state.savedJobs.savedJobs);
+  const isSaved = savedJobs.some(savedJob => savedJob.id === job?.id);
 
   const handleApply = () => {
     window.open(job.url, '_blank');
@@ -37,6 +42,11 @@ function JobDetails() {
       icon: '🚀',
       duration: 3000,
     });
+  };
+
+  const handleSaveJob = () => {
+    dispatch(toggleSavedJob(job));
+    toast.success(isSaved ? 'Job removed from saved jobs' : 'Job saved successfully!');
   };
 
   if (isLoading) {
@@ -64,7 +74,7 @@ function JobDetails() {
     <div className="w-full max-w-full mx-auto space-y-6 text-white hover:text-blue-500">
       <Button 
         variant="ghost" 
-        className="flex items-center gap-2"
+        className="flex items-center gap-2 text-white"
         onClick={() => navigate(-1)}
       >
         <ArrowLeft className="h-4 w-4" />
@@ -144,10 +154,11 @@ function JobDetails() {
             <Button 
               size="lg" 
               variant="outline" 
+              onClick={handleSaveJob}
               className="flex-1 sm:flex-none border-primary text-white hover:text-blue-500"
             >
-              Save Job
-              <BookmarkIcon className="ml-2 h-4 w-4" />
+              {isSaved ? 'Unsave Job' : 'Save Job'}
+              <BookmarkIcon className="ml-2 h-4 w-4" fill={isSaved ? 'currentColor' : 'none'} />
             </Button>
           </div>
         </CardContent>
